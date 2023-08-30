@@ -13,9 +13,9 @@ public class Program
         
         await ConvertWordLanguageAsync("English word.docx", LanguageCodes.ChineseTraditional, "Chinese word copy.docx",CancellationToken.None).ConfigureAwait(false);
         
-        await ConvertExcelLanguageAsync("Chinese excel.xlsx", LanguageCodes.English, "English excel.xlsx", CancellationToken.None);
+        await ConvertExcelLanguageAsync("Chinese excel.xlsx", LanguageCodes.English, "English excel.xlsx", CancellationToken.None).ConfigureAwait(false);
         
-        await ConvertExcelLanguageAsync("English excel.xlsx", LanguageCodes.ChineseTraditional, "Chinese excel copy.xlsx", CancellationToken.None);
+        await ConvertExcelLanguageAsync("English excel.xlsx", LanguageCodes.ChineseTraditional, "Chinese excel copy.xlsx", CancellationToken.None).ConfigureAwait(false);
     }
 
     private static async Task ConvertWordLanguageAsync(
