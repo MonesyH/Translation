@@ -1,4 +1,5 @@
-using OfficeOpenXml;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using NPOI.XWPF.UserModel;
 using Google.Cloud.Translation.V2;
 
@@ -8,13 +9,13 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        await ConvertExcelLanguageAsync(new FileInfo("Chinese excel.xlsx"), LanguageCodes.English, "English excel.xlsx",CancellationToken.None);
-        
-        await ConvertExcelLanguageAsync(new FileInfo("English excel.xlsx"), LanguageCodes.ChineseTraditional, "Chinese excel copy.xlsx",CancellationToken.None);
-        
         await ConvertWordLanguageAsync("Chinese word.docx", LanguageCodes.English, "English word.docx",CancellationToken.None).ConfigureAwait(false);
         
         await ConvertWordLanguageAsync("English word.docx", LanguageCodes.ChineseTraditional, "Chinese word copy.docx",CancellationToken.None).ConfigureAwait(false);
+        
+        await ConvertExcelLanguageAsync("Chinese excel.xlsx", LanguageCodes.English, "English excel.xlsx", CancellationToken.None);
+        
+        await ConvertExcelLanguageAsync("English excel.xlsx", LanguageCodes.ChineseTraditional, "Chinese excel copy.xlsx", CancellationToken.None);
     }
 
     private static async Task ConvertWordLanguageAsync(
@@ -36,35 +37,40 @@ public class Program
         await using var outputStream = new FileStream(outputFileName, FileMode.Create);
         doc.Write(outputStream);
     }
-    
+
     private static async Task ConvertExcelLanguageAsync(
-        FileInfo excel, string targetLanguage, string outputFileName, CancellationToken cancellationToken)
+        string excelName, string targetLanguage, string outputFileName, CancellationToken cancellationToken)
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        await using var stream = new FileStream(excelName, FileMode.Open, FileAccess.Read);
+
+        var excel = new XSSFWorkbook(stream);
         
-        using var package = new ExcelPackage(excel);
-        var worksheet = package.Workbook.Worksheets[0];
-        
-        for (var row = 1; row <= worksheet.Dimension.Rows; row++)
+        var worksheet = excel.GetSheetAt(0);
+
+        for (var row = 0; row <= worksheet.LastRowNum; row++)
         {
-            for (var col = 1; col <= worksheet.Dimension.Columns; col++)
+            var currentRow = worksheet.GetRow(row);
+            if (currentRow == null) continue;
+
+            for (var col = 0; col < currentRow.LastCellNum; col++)
             {
-                var cell = worksheet.Cells[row, col];
-                
-                if (cell.Text.Trim() != "")
+                var cell = currentRow.GetCell(col, MissingCellPolicy.CREATE_NULL_AS_BLANK);
+
+                if (!string.IsNullOrWhiteSpace(cell.ToString()))
                 {
-                    var translatedText = await TranslateTextAsync(targetLanguage, cell.Text, cancellationToken).ConfigureAwait(false);
-                    cell.Value = translatedText;
+                    var translatedText = await TranslateTextAsync(targetLanguage, cell.StringCellValue, cancellationToken).ConfigureAwait(false);
+                    cell.SetCellValue(translatedText);
                 }
             }
         }
-
-        await package.SaveAsAsync(new FileInfo(outputFileName), cancellationToken).ConfigureAwait(false);
-    }
+        
+        await using var outputStream = new FileStream(outputFileName, FileMode.Create);
+        excel.Write(outputStream);
+    } 
     
     private static async Task<string> TranslateTextAsync(string targetLanguage, string text, CancellationToken cancellationToken)
     {
-        var translationClient = TranslationClient.CreateFromApiKey("xxxxx");
+        var translationClient = TranslationClient.CreateFromApiKey("AIzaSyC4oIC6ptf1CQFAewFoKOjkI5YnCK3pCyg");
 
         var response = await translationClient
             .TranslateTextAsync(text, targetLanguage, cancellationToken: cancellationToken).ConfigureAwait(false);
