@@ -70,7 +70,7 @@ public class Program
     
     private static async Task<string> TranslateTextAsync(string targetLanguage, string text, CancellationToken cancellationToken)
     {
-        var translationClient = TranslationClient.CreateFromApiKey("AIzaSyC4oIC6ptf1CQFAewFoKOjkI5YnCK3pCyg");
+        var translationClient = TranslationClient.CreateFromApiKey("xxxx");
 
         var response = await translationClient
             .TranslateTextAsync(text, targetLanguage, cancellationToken: cancellationToken).ConfigureAwait(false);
